@@ -2,7 +2,7 @@
   session_start();
   require "db_connection.php";
 
-  if(!isset($_SESSION['user_id'])){
+  if(isset($_SESSION['user_id'])){
     header("Location: dashboard.php");
     exit();
   }
@@ -12,9 +12,30 @@
     $name = $_POST['name'];
     $email = $_POST['email'];
     $password = $_POST['password'];
-    $stmt = $con->prepare("INSERT INTO users (name, email, password) 	VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $name, $email, $password);
-    
+
+    /* $stmt = $con->prepare("INSERT INTO users (name, email, password) 	VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $name, $email, $password); */
+    $check_stmt = $con->prepare("SELECT id FROM users WHERE email = ?");
+    $check_stmt->bind_param("s", $email);
+    $check_stmt->execute();
+    $check_stmt->store_result();
+
+  if ($check_stmt->num_rows > 0) {
+      echo "
+      <script>
+        alert('Email already exists! Please use another email.');
+        document.location = 'registration.php';
+      </script>";
+      exit();
+  }
+  $check_stmt->close();
+
+    #hashed password using bcrypt
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+    $stmt = $con->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $name, $email, $hashed_password);
+
     if ($stmt->execute()) {
       echo "
       <script>
@@ -27,7 +48,6 @@
     $stmt->close();
   }
 ?>
-
 
 <!DOCTYPE html>
 <html>
