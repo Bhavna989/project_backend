@@ -10,15 +10,10 @@
     </script>";
   }
 
-   
 
-    $stmt = $con->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $name, $email, $hashed_password);
-  
   if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
     $password = $_POST['password'];
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     $stmt = $con->prepare("SELECT id, name, password FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
