@@ -8,27 +8,26 @@ use Illuminate\Http\JsonResponse;
 
 class StudentController extends Controller
 {
-    // ── READ ALL  →  GET /api/students ──────────────
     public function index(): JsonResponse
     {
-        $students = Student::all();
-
         return response()->json([
             'success' => true,
             'message' => 'All students retrieved',
-            'data'    => $students,
+            'data'    => Student::all(),
         ], 200);
     }
 
-    // ── CREATE  →  POST /api/students ───────────────
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'   => 'required|string|max:255',
-            'email'  => 'required|email|unique:students,email',
-            'course' => 'required|string|max:255',
-            'age'    => 'required|integer|min:1|max:100',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:students,email',
+            'course'   => 'required|string|max:255',
+            'age'      => 'required|integer|min:1|max:100',
+            'password' => 'required|string|min:6',
         ]);
+
+        $validated['password'] = bcrypt($validated['password']);
 
         $student = Student::create($validated);
 
@@ -39,7 +38,6 @@ class StudentController extends Controller
         ], 201);
     }
 
-    // ── READ ONE  →  GET /api/students/{id} ─────────
     public function show(Student $student): JsonResponse
     {
         return response()->json([
@@ -48,26 +46,30 @@ class StudentController extends Controller
         ], 200);
     }
 
-    // ── UPDATE  →  PUT /api/students/{id} ───────────
     public function update(Request $request, Student $student): JsonResponse
     {
-        $validated = $request->validate([
-            'name'   => 'sometimes|string|max:255',
-            'email'  => 'sometimes|email|unique:students,email,'.$student->id,
-            'course' => 'sometimes|string|max:255',
-            'age'    => 'sometimes|integer|min:1|max:100',
-        ]);
+    $validated = $request->validate([
+        'name'     => 'sometimes|string|max:255',
+        'email'    => 'sometimes|email|unique:students,email,' . $student->id,
+        'course'   => 'sometimes|string|max:255',
+        'age'      => 'sometimes|integer|min:1|max:100',
+        'password' => 'sometimes|string|min:6',
+    ]);
 
-        $student->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Student updated successfully',
-            'data'    => $student,
-        ], 200);
+    if (isset($validated['password'])) {
+        $validated['password'] = bcrypt($validated['password']);
     }
 
-    // ── DELETE  →  DELETE /api/students/{id} ────────
+    $student->update($validated);
+    $student->refresh(); // ← add this line
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Student updated successfully',
+        'data'    => $student,
+    ], 200);
+    }
+
     public function destroy(Student $student): JsonResponse
     {
         $student->delete();
